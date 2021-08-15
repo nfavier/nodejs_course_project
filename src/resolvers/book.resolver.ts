@@ -65,7 +65,7 @@ export class BookResolver {
       });
 
       return await this.bookRepository.findOne(book.identifiers[0].id, {
-        relations: ["author"],
+        relations: ["author", "author.books"],
       });
     } catch (e) {
       throw new Error(e.message);
@@ -75,7 +75,9 @@ export class BookResolver {
   @Query(() => [Book])
   async getAllBooks(): Promise<Book[]> {
     try {
-      return await this.bookRepository.find({ relations: ["author"] });
+      return await this.bookRepository.find({
+        relations: ["author", "author.books"],
+      });
     } catch (e) {
       throw new Error(e);
     }
@@ -87,7 +89,7 @@ export class BookResolver {
   ): Promise<Book | undefined> {
     try {
       const book = await this.bookRepository.findOne(input.id, {
-        relations: ["author"],
+        relations: ["author", "author.books"],
       });
       if (!book) {
         const error = new Error();
@@ -118,8 +120,13 @@ export class BookResolver {
     @Arg("bookId", () => BookIdInput) bookId: BookIdInput
   ): Promise<Boolean> {
     try {
-      await this.bookRepository.delete(bookId.id);
-      return true;
+      const result = await this.bookRepository.delete(bookId.id);
+
+      if (result.affected === 0) {
+        throw new Error("Book does not exists");
+      } else {
+        return true;
+      }
     } catch (e) {
       throw new Error(e);
     }
