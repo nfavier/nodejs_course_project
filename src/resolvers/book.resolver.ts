@@ -1,11 +1,23 @@
-import { Mutation, Resolver, Arg, InputType, Field, Query } from "type-graphql";
+import {
+  Mutation,
+  Resolver,
+  Arg,
+  InputType,
+  Field,
+  Query,
+  UseMiddleware,
+  Ctx,
+} from "type-graphql";
 import { getRepository, In, Repository } from "typeorm";
 import { Author } from "../entity/author.entity";
 import { Book } from "../entity/book.entity";
+import { Length } from "class-validator";
+import { IContext, isAuth } from "../middleware/auth.middleware";
 
 @InputType()
 class BookInput {
   @Field()
+  @Length(3, 64)
   title!: string;
 
   @Field()
@@ -15,6 +27,7 @@ class BookInput {
 @InputType()
 class BookUpdateInput {
   @Field(() => String, { nullable: true })
+  @Length(3, 64)
   title?: string;
 
   @Field(() => Number, { nullable: true })
@@ -24,6 +37,7 @@ class BookUpdateInput {
 @InputType()
 class BookUpdateParsedInput {
   @Field(() => String, { nullable: true })
+  @Length(3, 64)
   title?: string;
 
   @Field(() => Author, { nullable: true })
@@ -47,8 +61,13 @@ export class BookResolver {
   }
 
   @Mutation(() => Book)
-  async createBook(@Arg("input", () => BookInput) input: BookInput) {
+  @UseMiddleware(isAuth)
+  async createBook(
+    @Arg("input", () => BookInput) input: BookInput,
+    @Ctx() context: IContext
+  ) {
     try {
+      console.log(context.payload);
       const author: Author | undefined = await this.authorRepository.findOne(
         input.author
       );
@@ -73,6 +92,7 @@ export class BookResolver {
   }
 
   @Query(() => [Book])
+  @UseMiddleware(isAuth)
   async getAllBooks(): Promise<Book[]> {
     try {
       return await this.bookRepository.find({

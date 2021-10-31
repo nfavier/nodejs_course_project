@@ -1,16 +1,20 @@
 import { Mutation, Resolver, Arg, InputType, Field, Query } from "type-graphql";
 import { Author } from "../entity/author.entity";
 import { getRepository, Repository } from "typeorm";
+import { Length, IsString } from "class-validator";
 
 @InputType()
 class AuthorInput {
   @Field()
+  @Length(3, 64)
   fullName!: string;
 }
 
 @InputType()
 class AuthorUpdateInput {
   @Field(() => Number)
+  @Length(3, 64)
+  @IsString()
   id!: number;
 
   @Field()
